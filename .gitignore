@@ -1,0 +1,35 @@
+# files to ignore when pushing to git
+
+# Ignore bundler config.
+/.bundle
+/venv
+
+# Ignore all environment files (except templates).
+/.env*
+!/.env*.erb
+
+# Ignore all logfiles and tempfiles.
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# ignoring all migrations files
+src/src/migrations/*
+src/speech/migrations/*
+src/text/migrations/*
+
+src/src/__pycache__/*.cpython-312.pyc
+src/speech/__pycache__/*.cpython-312.pyc
+src/text/__pycache__/*.cpython-312.pyc
+
+src/src/__pycache__/*.cpython-310.pyc
+src/speech/__pycache__/*.cpython-310.pyc
+src/text/__pycache__/*.cpython-310.pyc
+
+src/db.sqlite3
+
+/test audio
+test audio/.m4a*
+
+16 Mar, 9.18 pm_.m4aZone.Identifier
