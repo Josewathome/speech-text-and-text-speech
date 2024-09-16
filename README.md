@@ -20,8 +20,8 @@ Ensure you have the following installed:
 ### Steps
 1. **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/Josewathome/speech-text-and-text-speech.git
+    cd speech-text-and-text-speech
     ```
 
 2. **Install the requirements:**
