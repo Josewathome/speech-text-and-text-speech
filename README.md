@@ -1,16 +1,17 @@
 ---
 
-# Testing System
+# Speech and Text Testing System
+A lightweight conversational assistant with text-to-speech (TTS) and transcription capabilities.
 
 ![Microphone Icon](https://img.icons8.com/ios-filled/50/000000/microphone.png) ![Speaker Icon](https://img.icons8.com/ios-filled/50/000000/speaker.png)
 
 ## Description
-A brief description of what your project does and its purpose.
+The Speech and Text Testing System is a small, lightweight conversational assistant that allows users to interact with the system through spoken commands. You can talk to the assistant, and it will read back your speech in English. The system utilizes the Whisper model for transcribing speech to text and the Coqui TTS model for text-to-speech functionality. While the Whisper model is predominantly trained on English, it can transcribe speech in over 30 languages. The TTS functionality can be extended to support multiple languages by modifying the TTS model.
 
 ## Installation
 
 ### Prerequisites
-Make sure you have the following installed:
+Ensure you have the following installed:
 - Python 3.x
 - Django
 - FFmpeg
@@ -45,7 +46,7 @@ Make sure you have the following installed:
 ## Additional Setup
 
 ### Whisper Model
-First, install the Whisper package using pip:
+To use the Whisper model for speech-to-text, install the Whisper package using pip:
 ```bash
 pip install openai-whisper
 ```
@@ -70,17 +71,17 @@ You might also need to install additional Python packages:
 pip install setuptools-rust
 ```
 
-## Whisper API
-In March 2023, OpenAI made the large-v2 model available through their API, offering faster performance than the open-source model at $0.006 per minute of transcription. The Whisper API supports transcriptions and translations, accepting standard audio formats like m4a, mp3, mp4, and wav.
+### Whisper API
+OpenAI's Whisper API, released in March 2023, offers faster performance than the open-source model and is priced at $0.006 per minute of transcription. It supports transcriptions and translations, accepting standard audio formats such as m4a, mp3, mp4, and wav. The API is particularly strong in English but can handle over 30 languages.
 
-## Coqui TTS
-Make sure you have installed Coqui TTS:
+For enhanced capabilities, consider Whisper-based APIs like Gladia, which offer a more extended feature set.
+
+### Coqui TTS
+To add text-to-speech functionality, install the Coqui TTS package:
 ```bash
 pip install TTS
 ```
 
-For more details, visit the [Coqui TTS GitHub page](https://github.com/coqui-ai/TTS).
+Coqui TTS allows for flexible language support. For more details, visit the [Coqui TTS GitHub page](https://github.com/coqui-ai/TTS).
 
 ---
-
-Feel free to customize this template to better fit your project's specifics. Let me know if you need any more help!
