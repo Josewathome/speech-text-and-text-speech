@@ -41,7 +41,7 @@ Ensure you have the following installed:
     ```
 
 5. **Access the interface:**
-    Open your browser and go to [http://localhost:8000/interface/](http://localhost:8000/interface/)
+    Open your browser and go to [http://localhost:8000/api/interface/](http://localhost:8000/api/interface/)
 
 ## Additional Setup
 
