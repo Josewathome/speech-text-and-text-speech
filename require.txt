@@ -1,3 +1,5 @@
+create a virtual enviroment
+
 install the requirements.txt
 clone the repo and:
 
@@ -10,7 +12,7 @@ then run the django server.
 
 python manage.py runserver
 
-then place this to your browser: http://localhost:8000/interface/ # this will be your server port and the /interface/
+then place this to your browser: http://localhost:8000/api/interface/ # this will be your server port and the /interface/
 you need this
 make sure you have the following:
 
@@ -30,7 +32,7 @@ On macOS using Homebrew:
 
 brew install ffmpeg
 
-On Windows, you can download it from the official FFmpeg website and add it to your system PATH.
+On Windows, you can download it from the official FFmpeg website and add it to your system PATH. ( downlood and install)
 
 
 You might also need to install some additional Python packages:

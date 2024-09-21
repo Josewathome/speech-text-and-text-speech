@@ -21,15 +21,23 @@ import json
 # Initialize TTS model
 tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
 
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def text_to_speech(request):
-    """
-    Django view to handle text-to-speech requests.
+    pass
+
+
+"""
+@csrf_exempt
+@require_http_methods(["POST"])
+def text_to_speech(request):
     
-    Expects a JSON payload with 'text' and optional parameters.
-    Returns an audio file of the synthesized speech.
-    """
+    # Django view to handle text-to-speech requests.
+    
+    # Expects a JSON payload with 'text' and optional parameters.
+    # Returns an audio file of the synthesized speech.
+    
     try:
         data = json.loads(request.body.decode('utf-8'))
         text = data.get('text')
@@ -78,7 +86,7 @@ def text_to_speech(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
+"""
 
 """"
 We added a model_name parameter to allow users to specify different models.

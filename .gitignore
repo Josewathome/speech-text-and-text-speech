@@ -18,14 +18,17 @@
 src/src/migrations/*
 src/speech/migrations/*
 src/text/migrations/*
+src/static_loc/migrations/*
 
 src/src/__pycache__/*.cpython-312.pyc
 src/speech/__pycache__/*.cpython-312.pyc
 src/text/__pycache__/*.cpython-312.pyc
+src/static_loc/__pycache__/*.cpython-312.pyc
 
 src/src/__pycache__/*.cpython-310.pyc
 src/speech/__pycache__/*.cpython-310.pyc
 src/text/__pycache__/*.cpython-310.pyc
+src/static_loc/__pycache__/*.cpython-310.pyc
 
 src/db.sqlite3
 
@@ -33,3 +36,5 @@ src/db.sqlite3
 test audio/.m4a*
 
 16 Mar, 9.18 pm_.m4aZone.Identifier
+screenshot/*.Identifier
+

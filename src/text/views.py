@@ -105,52 +105,46 @@ def cleanup(*file_paths):
             print(f"Error removing file {file_path}: {e}")
 
 # views.py
-import json
-import os
-import tempfile
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-import whisper
-from pydub import AudioSegment
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def transcribe_view(request):
     """
     Django view to handle audio transcription requests.
-    
-    Accepts audio file upload in mp3 format.
-    Returns transcribed text as JSON response.
+
+    Accepts audio file uploads in different formats (mp3, wav, ogg, etc.).
+    Returns transcribed text as a JSON response.
     """
     try:
         if 'audio' not in request.FILES:
             return JsonResponse({"error": "No audio file provided"}, status=400)
 
         audio_file = request.FILES['audio']
-        
-        # Save the uploaded mp3 file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+
+        file_extension = os.path.splitext(audio_file.name)[1].lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
             for chunk in audio_file.chunks():
                 temp_file.write(chunk)
         
-        mp3_file_path = temp_file.name
-        
-        # Convert mp3 to wav
-        audio = AudioSegment.from_mp3(mp3_file_path)
-        wav_file_path = tempfile.mktemp(suffix='.wav')
-        audio.export(wav_file_path, format="wav")
-        
-        # Transcribe audio
+        input_file_path = temp_file.name
+
+        if file_extension != ".wav":
+            audio = AudioSegment.from_file(input_file_path)
+            wav_file_path = tempfile.mktemp(suffix='.wav')
+            audio.export(wav_file_path, format="wav")
+        else:
+            wav_file_path = input_file_path
+
         model = whisper.load_model("base")
         result = model.transcribe(wav_file_path)
         transcription = result["text"]
         
-        # Clean up temporary files
-        os.remove(mp3_file_path)
-        os.remove(wav_file_path)
-        
+        os.remove(input_file_path)
+        if file_extension != ".wav":
+            os.remove(wav_file_path)
+
         return JsonResponse({"transcription": transcription})
-    
+
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
