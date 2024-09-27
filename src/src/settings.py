@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'text',
     'corsheaders',
     'speech',
+    'image_gen',
     
     
 ]

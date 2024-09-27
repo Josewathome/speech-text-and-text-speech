@@ -28,6 +28,11 @@ urlpatterns = [
     path('api/speech/',include('speech.urls'), name= 'converting text to speech using TTS'),
     
     path('api/interface/', views.my_html_view, name='my_html_view'),
+    
+    path('api/interface/history.html', views.history_html, name='History html'),
+    
+    path('api/models/', include('image_gen.urls'), name= 'Modles like image, text ans summary generation.')
+    
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 """
 if settings.DEBUG:

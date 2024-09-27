@@ -1,42 +1,47 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speech Interface</title>
+    <title>AI Chat Interface</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="icon" href="data:,">
 </head>
 <body>
     <div class="container">
-        <h1>Speech Interface</h1>
-        <textarea id="result" placeholder="Enter text or see transcription here"></textarea>
-        <div class="controls">
-            <div id="micWrapper" class="icon-wrapper">
-                <span id="micIcon" class="icon">🎤</span>
-            </div>
-            <div id="speakerWrapper" class="icon-wrapper">
-                <span id="speakerIcon" class="icon">🔊</span>
-            </div>
-            <div id="uploadWrapper" class="icon-wrapper">
-                <label for="audioUpload" class="icon">📤</label>
-                <input type="file" id="audioUpload" accept="audio/*" style="display: none;">
-            </div>
-            <div id="downloadWrapper" class="icon-wrapper">
-                <span id="downloadIcon" class="icon">📥</span>
+        <div class="chat-container">
+            <div id="chatHistory"></div>
+            <div class="input-container">
+                <div id="inputWrapper">
+                    <textarea id="userInput" placeholder="Type your message here..."></textarea>
+                    <div class="input-buttons">
+                        <button id="micButton" title="Record Audio">🎤</button>
+                        <button id="uploadButton" title="Upload Audio">📤</button>
+                        <input type="file" id="audioUpload" accept="audio/*" style="display: none;">
+                        <button id="submitButton" title="Send Message">⬆</button>
+                        <label for="imageCheckbox">
+                            <input type="checkbox" id="imageCheckbox"> Generate Image
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="loader" class="loader" style="display:none;"></div>
-
+        <div class="history-panel">
+            <h2>History</h2>
+            <ul id="historyList"></ul>
+            <button id="newChatButton">New Chat</button>
+        </div>
     </div>
-    <div class="history-panel">
-        <h2>History</h2>
-        <ul id="historyList"></ul>
+    <div id="loader" class="loader" style="display:none;"></div>
+    <div id="errorPopup" class="error-popup" style="display:none;">
+        <div class="error-content">
+            <span class="close-button">&times;</span>
+            <p id="errorMessage"></p>
+        </div>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
     <script src="{% static 'js/script.js' %}"></script>
+    <a href="https://github.com/Josewathome/speech-text-and-text-speech" target="_blank">by @Joseph Wathome 2024</a>
 </body>
 </html>

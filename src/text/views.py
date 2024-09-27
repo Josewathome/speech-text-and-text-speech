@@ -148,3 +148,41 @@ def transcribe_view(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
+
+
+
+
+
+
+
+
+# install chat history
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import ChatHistory
+import json
+
+@csrf_exempt
+def model_update(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        input_text = data.get('input_text')
+        output_text = data.get('output_text')
+        
+        # Create a title from the first 4 words of the output
+        title = ' '.join(output_text.split()[:4]) + '...'
+        
+        chat_history = ChatHistory.objects.create(
+            title=title,
+            input_text=input_text,
+            output_text=output_text
+        )
+        
+        return JsonResponse({
+            'id': chat_history.id,
+            'title': chat_history.title,
+            'timestamp': chat_history.timestamp.isoformat()
+        })
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=400)

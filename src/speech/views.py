@@ -22,13 +22,7 @@ import json
 tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
 
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def text_to_speech(request):
-    pass
 
-
-"""
 @csrf_exempt
 @require_http_methods(["POST"])
 def text_to_speech(request):
@@ -86,7 +80,6 @@ def text_to_speech(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-"""
 
 """"
 We added a model_name parameter to allow users to specify different models.

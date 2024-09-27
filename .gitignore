@@ -19,16 +19,19 @@ src/src/migrations/*
 src/speech/migrations/*
 src/text/migrations/*
 src/static_loc/migrations/*
+src/image_gen/migrations/*
 
 src/src/__pycache__/*.cpython-312.pyc
 src/speech/__pycache__/*.cpython-312.pyc
 src/text/__pycache__/*.cpython-312.pyc
 src/static_loc/__pycache__/*.cpython-312.pyc
+src/image_gen/__pycache__/*.cpython-312.pyc
 
 src/src/__pycache__/*.cpython-310.pyc
 src/speech/__pycache__/*.cpython-310.pyc
 src/text/__pycache__/*.cpython-310.pyc
 src/static_loc/__pycache__/*.cpython-310.pyc
+src/image_gen/__pycache__/*.cpython-310.pyc
 
 src/db.sqlite3
 
@@ -37,4 +40,11 @@ test audio/.m4a*
 
 16 Mar, 9.18 pm_.m4aZone.Identifier
 screenshot/*.Identifier
+#secrates
+src/src/secrets/secrets.txt
 
+src/static_loc/static/js/my-worklet-processor.js
+src/static_loc/static/js/main 1_script.js
+src/static_loc/static/css/main 1_style.css
+src/static_loc/templates/indexmain.html
+src/static_loc/templates/main 1_ index.html

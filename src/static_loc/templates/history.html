@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat History</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div id="historyContent"></div>
+        </div>
+    </div>
+    <button id="closeButton" onclick="window.close()">Close</button>
+    <script src="{% static 'js/history.js' %}"></script>
+</body>
+</html>
