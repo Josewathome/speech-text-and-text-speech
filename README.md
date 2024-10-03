@@ -184,4 +184,3 @@ We welcome contributions to improve the system. To contribute:
 This project is licensed under the MIT License. See the `LICENSE` file for details.
 ```
 
-This `README.md` provides step-by-step instructions, covering the setup, usage, and model integration processes, while also mentioning the APIs used. It should be easy for anyone to follow along and use the system. Let me know if you want further customizations!
