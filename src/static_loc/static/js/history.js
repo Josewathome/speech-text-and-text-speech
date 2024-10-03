@@ -1,145 +1,215 @@
-// history.js
-document.addEventListener('DOMContentLoaded', function() {
-    const historyContent = document.getElementById('historyContent');
-    const urlParams = new URLSearchParams(window.location.search);
-    const chatId = urlParams.get('id');
+let currentChatCode;
 
-    if (chatId) {
-        loadChat(chatId);
-    } else {
-        historyContent.textContent = 'No chat selected.';
+// DOM elements
+const historyContent = document.getElementById('historyContent');
+const deleteButton = document.getElementById('deleteButton');
+
+// Initialize the history page
+function initHistoryPage() {
+    window.addEventListener('message', (event) => {
+        if (event.data.chatCode) {
+            currentChatCode = event.data.chatCode;
+            fetchChatHistory();
+        }
+    });
+
+    deleteButton.addEventListener('click', deleteChat);
+}
+
+// Fetch and display chat history
+async function fetchChatHistory() {
+    if (!currentChatCode) {
+        historyContent.innerHTML = 'No chat selected';
+        return;
     }
 
-    function loadChat(chatId) {
-        const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        const chat = history.find(c => c.id === chatId);
-        
-        if (chat) {
-            addMessageToHistory('user', chat.input);
-            addMessageToHistory('ai', chat.output);
-            
-            // Load associated audio
-            const audioStorage = JSON.parse(localStorage.getItem('audioStorage')) || {};
-            if (audioStorage[chatId]) {
-                try {
-                    const audioBlob = base64ToBlob(audioStorage[chatId], 'audio/wav');
-                    addAudioToMessage(historyContent.lastElementChild, audioBlob);
-                } catch (error) {
-                    console.error('Error loading audio:', error);
+    try {
+        const response = await fetch(`/api/text/chat/?chat_code=${currentChatCode}&page=1&per_page=100`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        historyContent.innerHTML = ''; // Clear existing content
+
+        if (data.history && data.history.length > 0) {
+            // Sort history items by id in ascending order (oldest first)
+            data.history.sort((a, b) => a.id - b.id);
+
+            data.history.forEach((item) => {
+                // Display user input
+                displayMessage(item.input_text, true);
+
+                // Display AI output
+                displayMessage(item.output_text, false);
+
+                // Display files (audio and images)
+                if (item.files && item.files.length > 0) {
+                    item.files.forEach(file => {
+                        if (file.output_audio) {
+                            displayAudioPlayer(file.output_audio);
+                        }
+                        if (file.output_image) {
+                            displayImage(file.output_image);
+                        }
+                    });
                 }
-            }
-            
-            // Load associated images
-            const imageStorage = JSON.parse(localStorage.getItem('imageStorage')) || {};
-            if (imageStorage[chatId]) {
-                imageStorage[chatId].forEach(imageBase64 => {
-                    try {
-                        addImageToHistory(imageBase64);
-                    } catch (error) {
-                        console.error('Error loading image:', error);
-                    }
-                });
-            }
-
-            // Add delete button
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = 'Delete Chat';
-            deleteButton.addEventListener('click', () => deleteChat(chatId));
-            historyContent.appendChild(deleteButton);
+            });
         } else {
-            historyContent.textContent = 'Chat not found.';
+            historyContent.innerHTML = 'No messages in this chat';
+        }
+    } catch (error) {
+        showError('Error fetching chat history: ' + error.message);
+    }
+}
+
+// Display message in chat history
+function displayMessage(message, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', isUser ? 'user-message' : 'ai-message');
+    messageDiv.textContent = message;
+    historyContent.appendChild(messageDiv);
+}
+
+// Display audio player
+function displayAudioPlayer(audioUrl) {
+    const audioContainer = document.createElement('div');
+    audioContainer.classList.add('audio-container');
+
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    const fullAudioUrl = getMediaUrl(audioUrl);
+    audio.src = fullAudioUrl;
+
+    audio.onerror = function() {
+        console.error('Error loading audio:', fullAudioUrl);
+        showError(`Error loading audio: ${fullAudioUrl}`);
+    };
+
+    const downloadButton = document.createElement('button');
+    downloadButton.textContent = 'Download Audio';
+    downloadButton.classList.add('download-button');
+    downloadButton.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.href = fullAudioUrl;
+        link.download = 'audio.wav';
+        link.click();
+    });
+
+    audioContainer.appendChild(audio);
+    audioContainer.appendChild(downloadButton);
+    historyContent.appendChild(audioContainer);
+}
+
+// Display image
+function displayImage(imageUrl) {
+    const imageContainer = document.createElement('div');
+    imageContainer.classList.add('image-container');
+
+    const img = document.createElement('img');
+    const fullImageUrl = getMediaUrl(imageUrl);
+    img.src = fullImageUrl;
+    img.alt = 'Generated Image';
+    img.classList.add('image-thumbnail');
+
+    img.onerror = function() {
+        console.error('Error loading image:', fullImageUrl);
+        showError(`Error loading image: ${fullImageUrl}`);
+    };
+
+    imageContainer.appendChild(img);
+    historyContent.appendChild(imageContainer);
+
+    // Create fullscreen overlay
+    const overlay = document.createElement('div');
+    overlay.classList.add('fullscreen-overlay');
+    const fullscreenImg = document.createElement('img');
+    fullscreenImg.src = fullImageUrl;
+    fullscreenImg.alt = 'Fullscreen Image';
+    fullscreenImg.classList.add('fullscreen-image');
+    overlay.appendChild(fullscreenImg);
+    document.body.appendChild(overlay);
+
+    // Add click event to show fullscreen
+    img.addEventListener('click', () => {
+        overlay.style.display = 'flex';
+    });
+
+    // Add click event to hide fullscreen
+    overlay.addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    const downloadButton = document.createElement('button');
+    downloadButton.textContent = 'Download Image';
+    downloadButton.classList.add('download-button');
+    downloadButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent triggering the fullscreen view
+        const link = document.createElement('a');
+        link.href = fullImageUrl;
+        link.download = 'image.jpg';
+        link.click();
+    });
+
+    imageContainer.appendChild(downloadButton);
+}
+
+// Delete chat
+async function deleteChat() {
+    if (!currentChatCode) {
+        showError('No chat selected');
+        return;
+    }
+
+    if (confirm('Are you sure you want to delete this chat?')) {
+        try {
+            const response = await fetch(`/api/text/chat/?chat_code=${currentChatCode}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            window.close();
+        } catch (error) {
+            showError('Error deleting chat: ' + error.message);
         }
     }
+}
 
-    function deleteChat(chatId) {
-        let history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        history = history.filter(chat => chat.id !== chatId);
-        localStorage.setItem('chatHistory', JSON.stringify(history));
+// Helper functions
+function getMediaUrl(path) {
+    return path.startsWith('/media/') ? path : '/media/' + path;
+}
 
-        // Delete associated audio
-        let audioStorage = JSON.parse(localStorage.getItem('audioStorage')) || {};
-        delete audioStorage[chatId];
-        localStorage.setItem('audioStorage', JSON.stringify(audioStorage));
-
-        // Delete associated images
-        let imageStorage = JSON.parse(localStorage.getItem('imageStorage')) || {};
-        delete imageStorage[chatId];
-        localStorage.setItem('imageStorage', JSON.stringify(imageStorage));
-
-        window.close();
-    }
-
-    function addMessageToHistory(sender, message) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message', sender + '-message');
-        messageElement.textContent = message;
-
-        const actionsElement = document.createElement('div');
-        actionsElement.classList.add('message-actions');
-        messageElement.appendChild(actionsElement);
-
-        historyContent.appendChild(messageElement);
-    }
-
-    function addAudioToMessage(messageElement, audioBlob) {
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audioElement = document.createElement('audio');
-        audioElement.src = audioUrl;
-        audioElement.controls = true;
-
-        const speakerButton = document.createElement('button');
-        speakerButton.innerHTML = '🔊';
-        speakerButton.addEventListener('click', () => audioElement.play());
-
-        const downloadButton = document.createElement('button');
-        downloadButton.innerHTML = '⬇️';
-        downloadButton.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.href = audioUrl;
-            link.download = 'audio.wav';
-            link.click();
-        });
-
-        const actionsElement = messageElement.querySelector('.message-actions');
-        actionsElement.appendChild(speakerButton);
-        actionsElement.appendChild(downloadButton);
-        actionsElement.appendChild(audioElement);
-    }
-
-    function addImageToHistory(imageBase64) {
-        const imgContainer = document.createElement('div');
-        imgContainer.classList.add('image-container');
-
-        const imgElement = document.createElement('img');
-        imgElement.src = 'data:image/jpeg;base64,' + imageBase64;
-        imgElement.alt = 'Generated Image';
-        imgElement.classList.add('thumbnail');
-        imgElement.addEventListener('click', () => {
-            imgElement.classList.toggle('expanded');
-        });
-
-        const downloadButton = document.createElement('button');
-        downloadButton.textContent = 'Download Image';
-        downloadButton.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.href = 'data:image/jpeg;base64,' + imageBase64;
-            link.download = 'generated_image.jpg';
-            link.click();
-        });
-
-        imgContainer.appendChild(imgElement);
-        imgContainer.appendChild(downloadButton);
-        
-        historyContent.appendChild(imgContainer);
-    }
-
-    function base64ToBlob(base64, mimeType) {
-        const byteCharacters = atob(base64.split(',')[1]);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        return new Blob([byteArray], {type: mimeType});
     }
-});
+    return cookieValue;
+}
+
+function showError(message) {
+    alert(message); // For simplicity, using alert for error messages in the history page
+}
+
+// Initialize the history page when it loads
+window.addEventListener('load', initHistoryPage);

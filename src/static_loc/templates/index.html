@@ -1,3 +1,4 @@
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -28,13 +29,13 @@
             </div>
         </div>
         <div class="history-panel">
-            <h2>History</h2>
+            <h2>Chat History</h2>
             <ul id="historyList"></ul>
             <button id="newChatButton">New Chat</button>
         </div>
     </div>
-    <div id="loader" class="loader" style="display:none;"></div>
-    <div id="errorPopup" class="error-popup" style="display:none;">
+    <div id="loader" class="loader"></div>
+    <div id="errorPopup" class="error-popup">
         <div class="error-content">
             <span class="close-button">&times;</span>
             <p id="errorMessage"></p>
@@ -42,6 +43,8 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
     <script src="{% static 'js/script.js' %}"></script>
-    <a href="https://github.com/Josewathome/speech-text-and-text-speech" target="_blank">by @Joseph Wathome 2024</a>
+    <footer>
+        <a href="https://github.com/Josewathome/speech-text-and-text-speech" target="_blank">by Joseph Wathome 2024</a>
+    </footer>
 </body>
 </html>

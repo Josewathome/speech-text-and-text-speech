@@ -9,7 +9,6 @@ The text_to_speech view function:
 Accepts a POST request with JSON data containing the 'text' to be converted to speech.
 """
 
-# views.py
 import os
 import tempfile
 from django.http import FileResponse, JsonResponse
@@ -18,41 +17,34 @@ from django.views.decorators.http import require_http_methods
 from TTS.api import TTS
 import json
 
-# Initialize TTS model
 tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
 
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
-def text_to_speech(request):
-    
-    # Django view to handle text-to-speech requests.
-    
-    # Expects a JSON payload with 'text' and optional parameters.
-    # Returns an audio file of the synthesized speech.
-    
+def text_to_speech_api(request):
+
     try:
-        data = json.loads(request.body.decode('utf-8'))
+        if hasattr(request, 'body'):
+            data = json.loads(request.body.decode('utf-8'))
+        else:
+            data = request 
+            
         text = data.get('text')
         
         if not text:
             return JsonResponse({"error": "No text provided"}, status=400)
         
-        # Optional parameters with default values
         model_name = data.get('model', "tts_models/en/ljspeech/tacotron2-DDC")
         speaker = data.get('speaker', None)
         speed = float(data.get('speed', 1.0))
         
-        # Check if the model is multi-lingual
         is_multi_lingual = "multilingual" in model_name or "multi-dataset" in model_name
         
-        # Only use language if the model is multi-lingual
         language = data.get('language', 'en') if is_multi_lingual else None
         
-        # Create a temporary file to store the audio
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-            # Generate speech from text
             tts_kwargs = {
                 "text": text,
                 "file_path": temp_audio.name,
@@ -60,17 +52,14 @@ def text_to_speech(request):
                 "speed": speed
             }
             
-            # Only add language if it's a multi-lingual model
             if is_multi_lingual:
                 tts_kwargs["language"] = language
             
             tts.tts_to_file(**tts_kwargs)
         
-        # Send the file as a response
         response = FileResponse(open(temp_audio.name, 'rb'), content_type='audio/wav')
         response['Content-Disposition'] = 'attachment; filename="speech.wav"'
         
-        # Clean up the temporary file after sending
         os.unlink(temp_audio.name)
         
         return response
@@ -79,6 +68,57 @@ def text_to_speech(request):
         return JsonResponse({"error": "Invalid JSON in request body"}, status=400)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+import json
+import logging
+import os
+import base64
+import tempfile
+# Import any necessary libraries for TTS
+def text_to_speech(request):
+    try:
+       
+        model_name = "tts_models/en/ljspeech/tacotron2-DDC"
+        speaker =  None
+        speed = 1.0
+        
+        is_multi_lingual = "multilingual" in model_name or "multi-dataset" in model_name
+        
+        language = 'en' if is_multi_lingual else None
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            tts_kwargs = {
+                "text": request,
+                "file_path": temp_audio.name,
+                "speaker": speaker,
+                "speed": speed
+            }
+            
+            if is_multi_lingual:
+                tts_kwargs["language"] = language
+            
+            tts.tts_to_file(**tts_kwargs)
+        
+        with open(temp_audio.name, 'rb') as audio_file:
+            audio_content = audio_file.read()
+
+        audio_base64 = base64.b64encode(audio_content).decode('utf-8')
+
+        os.unlink(temp_audio.name)
+
+        return Response({
+            "audio_base64": audio_base64,
+            "content_type": "audio/wav",
+            "filename": "speech.wav"
+        })
+    
+    except json.JSONDecodeError:
+        return Response({"error": "Invalid JSON in request body"}, status=400)
+    except Exception as e:
+
+        return Response({"error": str(e)}, status=500)
 
 
 """"

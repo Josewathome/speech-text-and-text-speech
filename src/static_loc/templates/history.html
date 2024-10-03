@@ -6,14 +6,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat History</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        .container {
+            display: flex;
+            flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #e6f2ff;
+            text-align: right;
+        }
+        .ai-message {
+            background-color: #f0f0f0;
+        }
+        .audio-container, .image-container {
+            margin-top: 10px;
+        }
+        .download-button {
+            margin-top: 2px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .download-button:hover {
+            background-color: #45a049;
+        }
+        .button-container {
+            position: sticky;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+        }
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #333;
+            transition: color 0.3s;
+            padding: 5px;
+        }
+        .icon-button:hover {
+            color: #007bff;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="chat-container">
-            <div id="historyContent"></div>
+        <div class="chat-container" id="historyContent">
+            <!-- Chat history will be populated here -->
+        </div>
+        <div class="button-container">
+            <button id="deleteButton" class="icon-button" title="Delete Chat">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+            <button id="closeButton" class="icon-button" onclick="window.close()" title="Close Window">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     </div>
-    <button id="closeButton" onclick="window.close()">Close</button>
     <script src="{% static 'js/history.js' %}"></script>
+    <footer>
+        <a href="https://github.com/Josewathome/speech-text-and-text-speech" target="_blank">by Joseph Wathome 2024</a>
+    </footer>
 </body>
 </html>

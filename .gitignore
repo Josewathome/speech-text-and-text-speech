@@ -40,11 +40,11 @@ test audio/.m4a*
 
 16 Mar, 9.18 pm_.m4aZone.Identifier
 screenshot/*.Identifier
-#secrates
-src/src/secrets/secrets.txt
 
 src/static_loc/static/js/my-worklet-processor.js
 src/static_loc/static/js/main 1_script.js
 src/static_loc/static/css/main 1_style.css
 src/static_loc/templates/indexmain.html
 src/static_loc/templates/main 1_ index.html
+
+src/media/*

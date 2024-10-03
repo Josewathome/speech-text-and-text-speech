@@ -1,493 +1,463 @@
-//Script.js
-document.addEventListener('DOMContentLoaded', function() {
-    const chatHistory = document.getElementById('chatHistory');
-    const userInput = document.getElementById('userInput');
-    const micButton = document.getElementById('micButton');
-    const uploadButton = document.getElementById('uploadButton');
-    const submitButton = document.getElementById('submitButton');
-    const audioUpload = document.getElementById('audioUpload');
-    const historyList = document.getElementById('historyList');
-    const imageCheckbox = document.getElementById('imageCheckbox');
-    const loader = document.getElementById('loader');
-    const newChatButton = document.getElementById('newChatButton');
-    const errorPopup = document.getElementById('errorPopup');
-    const errorMessage = document.getElementById('errorMessage');
-    const closeButton = document.querySelector('.close-button');
+// script.js
+// Global variables
+let currentChatCode = localStorage.getItem('currentChatCode');
+let isRecording = false;
+let mediaRecorder;
+let audioChunks = [];
 
-    const MAX_IMAGES_PER_CHAT = 100;
-    const MAX_AUDIOS_PER_CHAT = 100;
-    let currentChatId = Date.now().toString();
-    let currentImageCount = 0;
-    let currentAudioCount = 0;
+// DOM elements
+const chatHistory = document.getElementById('chatHistory');
+const userInput = document.getElementById('userInput');
+const submitButton = document.getElementById('submitButton');
+const micButton = document.getElementById('micButton');
+const uploadButton = document.getElementById('uploadButton');
+const audioUpload = document.getElementById('audioUpload');
+const imageCheckbox = document.getElementById('imageCheckbox');
+const historyList = document.getElementById('historyList');
+const newChatButton = document.getElementById('newChatButton');
+const loader = document.getElementById('loader');
+const errorPopup = document.getElementById('errorPopup');
+const errorMessage = document.getElementById('errorMessage');
 
-    let isGeneratingAudio = false;
-
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
-
-    // Event listeners
+// Initialize the chat interface
+async function initChat() {
+    submitButton.addEventListener('click', handleSubmit);
     micButton.addEventListener('click', toggleRecording);
     uploadButton.addEventListener('click', () => audioUpload.click());
     audioUpload.addEventListener('change', handleAudioUpload);
-    submitButton.addEventListener('click', handleSubmit);
     newChatButton.addEventListener('click', startNewChat);
-    closeButton.addEventListener('click', closeErrorPopup);
 
-    // Load chat history from localStorage
-    loadChatHistory();
-
-    function showLoader() {
-        loader.style.display = 'block';
+    if (!currentChatCode) {
+        await createNewChat();
     }
 
-    function hideLoader() {
-        loader.style.display = 'none';
-    }
-
-    function disableButtons(disable = true) {
-        [submitButton, micButton, uploadButton, imageCheckbox].forEach(button => {
-            button.disabled = disable;
+    await fetchChatHistory();
+    await updateHistoryList();
+}
+// Create a new chat
+async function createNewChat() {
+    try {
+        const response = await fetch('/api/text/chat/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ title: "New chat" })
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        currentChatCode = data.code;
+        localStorage.setItem('currentChatCode', currentChatCode);
+    } catch (error) {
+        showError('Error creating new chat: ' + error.message);
+    }
+}
+
+// Handle form submission
+async function handleSubmit() {
+    const text = userInput.value.trim();
+    const generateImage = imageCheckbox.checked;
+
+    if (text) {
+        await sendMessage(text, null, generateImage);
+        userInput.value = '';
+    }
+}
+
+// Send message to the API
+async function sendMessage(text, audioBlob, generateImage) {
+    showLoader();
+
+    const formData = new FormData();
+    formData.append('input_type', audioBlob ? 'audio' : 'text');
+    formData.append('generate_image', generateImage);
+
+    if (audioBlob) {
+        formData.append('audio', audioBlob, 'audio.wav');
+    } else {
+        formData.append('input_content', text);
     }
 
-    function handleAudioUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const formData = new FormData();
-            formData.append('audio', file);
+    formData.append('chat_code', currentChatCode);
 
-            showLoader();
-            disableButtons();
+    try {
+        const response = await fetch('/api/text/chat/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
 
-            fetch('/api/text/transcribe/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.transcription) {
-                    addMessageToChat('user', data.transcription);
-                    sendMessageToServer(data.transcription);
-                } else {
-                    showError('No transcription received');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Display the new message
+        displayMessage(text, true);
+        displayMessage(data.output_text, false);
+
+        // Display any new audio or image files
+        if (data.files) {
+            data.files.forEach(file => {
+                if (file.output_audio) {
+                    displayAudioPlayer(file.output_audio);
                 }
-            })
-            .catch(error => {
-                console.error('Error uploading audio file:', error);
-                showError('An error occurred during audio upload. Please try again.');
-            })
-            .finally(() => {
-                hideLoader();
-                disableButtons(false);
+                if (file.output_image) {
+                    displayImage(file.output_image);
+                }
             });
         }
+
+        // Scroll to the bottom of the chat history
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        await updateHistoryList();
+
+    } catch (error) {
+        showError('Error sending message: ' + error.message);
+    } finally {
+        hideLoader();
+    }
+}
+
+// Delete a chat
+async function deleteChat(chatCode) {
+    try {
+        const response = await fetch(`/api/text/chat/?chat_code=${chatCode}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        await updateHistoryList();
+    } catch (error) {
+        showError('Error deleting chat: ' + error.message);
+    }
+}
+
+// Load and display chat history
+async function fetchChatHistory() {
+    if (!currentChatCode) {
+        chatHistory.innerHTML = '';
+        return;
     }
 
-    async function toggleRecording() {
-        if (isRecording) {
-            stopRecording();
+    try {
+        const response = await fetch(`/api/text/chat/?chat_code=${currentChatCode}&page=1&per_page=100`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        chatHistory.innerHTML = ''; // Clear existing chat history
+
+        if (data.history && data.history.length > 0) {
+            // Sort history items by id in ascending order (oldest first)
+            data.history.sort((a, b) => a.id - b.id);
+
+            data.history.forEach((item) => {
+                // Display messages in chat history (oldest first)
+                displayMessage(item.input_text, true);
+                displayMessage(item.output_text, false);
+
+                // Display audio and image files if present
+                if (item.files) {
+                    item.files.forEach(file => {
+                        if (file.output_audio) {
+                            displayAudioPlayer(file.output_audio);
+                        }
+                        if (file.output_image) {
+                            displayImage(file.output_image);
+                        }
+                    });
+                }
+            });
+        }
+
+        // Scroll to the bottom of the chat history
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    } catch (error) {
+        showError('Error fetching chat history. "Fix:" Try creating a new chat: ' + error.message);
+    }
+}
+
+// Update history list
+async function updateHistoryList() {
+    try {
+        const response = await fetch('/api/text/querychat/list_chats/', {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const chats = await response.json();
+
+        historyList.innerHTML = ''; // Clear existing history list
+
+        if (chats && chats.length > 0) {
+            // Sort chats by updated_at field in descending order (most recent first)
+            const sortedChats = chats.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+            sortedChats.forEach((chat) => {
+                const li = document.createElement('li');
+                
+                // Create a span for the chat title
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = chat.title || 'Untitled Chat';
+                titleSpan.classList.add('chat-title');
+                
+                // Create a span for the last update time
+                const timeSpan = document.createElement('span');
+                const updateTime = new Date(chat.updated_at);
+                timeSpan.textContent = updateTime.toLocaleString(); // Format date as per local settings
+                timeSpan.classList.add('chat-time');
+
+                // Append both spans to the list item
+                li.appendChild(titleSpan);
+                li.appendChild(timeSpan);
+
+                li.addEventListener('click', () => {
+                    openChatHistory(chat.code);
+                });
+                historyList.appendChild(li);
+            });
         } else {
-            await startRecording();
+            const li = document.createElement('li');
+            li.textContent = 'No chat history available';
+            historyList.appendChild(li);
         }
+    } catch (error) {
+        showError('Error updating history list: ' + error.message);
     }
+}
+// Open chat history in a new window
+function openChatHistory(chatCode) {
+    const historyWindow = window.open('history.html', '_blank');
+    historyWindow.onload = () => {
+        historyWindow.postMessage({ chatCode: chatCode }, '*');
+    };
+}
 
-    async function startRecording() {
-        try {
-            disableButtons();
-            showLoader();
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+// Start a new chat session
+async function startNewChat() {
+    currentChatCode = null;
+    localStorage.removeItem('currentChatCode');
+    chatHistory.innerHTML = '';
+    await createNewChat();
+    await fetchChatHistory();
+    await updateHistoryList();
+}
 
-            mediaRecorder.addEventListener('dataavailable', event => {
+
+
+
+
+
+
+// Toggle audio recording
+function toggleRecording() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+// Start audio recording
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            mediaRecorder.ondataavailable = event => {
                 audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener('stop', () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                sendAudioToServer(audioBlob);
-            });
-
+            };
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                sendMessage(null, audioBlob, imageCheckbox.checked);
+                audioChunks = [];
+            };
             mediaRecorder.start();
             isRecording = true;
             micButton.textContent = '⏹️';
-        } catch (error) {
-            console.error('Error starting recording:', error);
-            showError('Error starting recording. Please check console for details.');
-        } finally {
-            hideLoader();
-            disableButtons(false);
-        }
-    }
-
-    function stopRecording() {
-        mediaRecorder.stop();
-        isRecording = false;
-        micButton.textContent = '🎤';
-    }
-
-    function sendAudioToServer(audioBlob) {
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-
-        showLoader();
-        disableButtons();
-
-        fetch('/api/text/transcribe/', {
-            method: 'POST',
-            body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.transcription) {
-                addMessageToChat('user', data.transcription);
-                sendMessageToServer(data.transcription);
-            } else {
-                showError('No transcription received');
-            }
-        })
-        .catch(error => {
-            console.error('Error sending audio to server:', error);
-            showError('An error occurred during audio transcription. Please try again.');
-        })
-        .finally(() => {
-            hideLoader();
-            disableButtons(false);
-        });
+        .catch(error => showError('Error accessing microphone: ' + error.message));
+}
+
+// Stop audio recording
+function stopRecording() {
+    mediaRecorder.stop();
+    isRecording = false;
+    micButton.textContent = '🎤';
+}
+
+// Handle audio file upload
+function handleAudioUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        sendMessage(null, file, imageCheckbox.checked);
     }
+    event.target.value = ''; // Clear the input after upload
+}
 
-    function handleSubmit() {
-        const text = userInput.value.trim();
-        if (text) {
-            addMessageToChat('user', text);
-            sendMessageToServer(text, imageCheckbox.checked);
-            userInput.value = '';
-        }
+// Display message in chat history
+function displayMessage(message, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', isUser ? 'user-message' : 'ai-message');
+    messageDiv.textContent = message;
+    chatHistory.appendChild(messageDiv);
+}
+
+function getMediaUrl(path) {
+    let url;
+    if (path.startsWith('/media/')) {
+        url = path;
+    } else {
+        url = '/media/' + path;
     }
+    console.log('Constructed media URL:', url);
+    return url;
+}
 
-    function sendMessageToServer(text, isImageRequest) {
-        showLoader();
-        disableButtons();
-    
-        fetch('/api/models/generate-text/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.generated_text) {
-                addMessageToChat('ai', data.generated_text);
-                addToHistory(text, data.generated_text);
-                if (currentAudioCount < MAX_AUDIOS_PER_CHAT && !isGeneratingAudio) {
-                    currentAudioCount++;
-                    isGeneratingAudio = true;
-                    return generateAudio(data.generated_text);
-                }
-            } else {
-                showError('No generated text received');
-            }
-        })
-        .then(() => {
-            if (isImageRequest && currentImageCount < MAX_IMAGES_PER_CHAT) {
-                return generateImage(text);
-            }
-        })
-        .then(imageData => {
-            if (imageData && imageData.image_base64) {
-                console.log('Received image data, base64 length:', imageData.image_base64.length);
-                addImageToChat(imageData.image_base64);
-                currentImageCount++;
-            } else if (imageData) {
-                console.error('No valid image data received:', imageData);
-            }
-        })
-        .catch(error => {
-            console.error('Error during the generation process:', error);
-            showError('An error occurred while generating the response. Please try again.');
-        })
-        .finally(() => {
-            hideLoader();
-            disableButtons(false);
-            isGeneratingAudio = false;
-        });
-    }
+// Updated display audio player function with error handling
+function displayAudioPlayer(audioUrl) {
+    const audioContainer = document.createElement('div');
+    audioContainer.classList.add('audio-container');
 
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    const fullAudioUrl = getMediaUrl(audioUrl);
+    audio.src = fullAudioUrl;
 
-    function generateImage(text) {
-        if (text.length > 200) {
-            return fetch('/api/models/generate-summary/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.summary_text) {
-                    return fetch('/api/models/generate-image/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: data.summary_text })
-                    }).then(response => response.json());
-                } else {
-                    throw new Error('No summary text received');
-                }
-            });
-        } else {
-            return fetch('/api/models/generate-image/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            }).then(response => response.json());
-        }
-    }
+    audio.onerror = function() {
+        console.error('Error loading audio:', fullAudioUrl);
+        showError(`Error loading audio: ${fullAudioUrl}`);
+    };
 
-    function generateAudio(text) {
-        return fetch('/api/speech/tts/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            const messageElement = chatHistory.lastElementChild;
-            addAudioToMessage(messageElement, blob);
-            return saveAudioToLocalStorage(blob);
-        })
-        .catch(error => {
-            console.error('Error generating audio:', error);
-            showError('An error occurred while generating audio. Please try again.');
-        });
-    }
-
-
-    function addMessageToChat(sender, message) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message', sender + '-message');
-        messageElement.textContent = message;
-
-        const actionsElement = document.createElement('div');
-        actionsElement.classList.add('message-actions');
-        messageElement.appendChild(actionsElement);
-
-        chatHistory.appendChild(messageElement);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
-
-    function addAudioToMessage(messageElement, audioBlob) {
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audioElement = document.createElement('audio');
-        audioElement.src = audioUrl;
-        audioElement.controls = true;
-
-        const speakerButton = document.createElement('button');
-        speakerButton.innerHTML = '🔊';
-        speakerButton.addEventListener('click', () => audioElement.play());
-
-        const downloadButton = document.createElement('button');
-        downloadButton.innerHTML = '⬇️';
-        downloadButton.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.href = audioUrl;
-            link.download = `audio_${currentChatId}.wav`;
-            link.click();
-        });
-
-        const actionsElement = messageElement.querySelector('.message-actions');
-        actionsElement.appendChild(speakerButton);
-        actionsElement.appendChild(downloadButton);
-        actionsElement.appendChild(audioElement);
-    }
-
-    function addImageToChat(imageBase64) {
-        const imgContainer = document.createElement('div');
-        imgContainer.classList.add('image-container');
-    
-        const imgElement = document.createElement('img');
-        imgElement.src = 'data:image/jpeg;base64,' + imageBase64;
-        imgElement.alt = 'Generated Image';
-        imgElement.classList.add('thumbnail');
-        imgElement.addEventListener('click', () => {
-            imgElement.classList.toggle('expanded');
-        });
-    
-        const downloadButton = document.createElement('button');
-        downloadButton.textContent = 'Download Image';
-        downloadButton.addEventListener('click', () => downloadImage(imageBase64));
-    
-        imgContainer.appendChild(imgElement);
-        imgContainer.appendChild(downloadButton);
-        
-        chatHistory.appendChild(imgContainer);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    
-        saveImageToLocalStorage(imageBase64);
-    }
-
-    function downloadImage(imageBase64) {
+    const downloadButton = document.createElement('button');
+    downloadButton.textContent = 'Download';
+    downloadButton.classList.add('download-button');
+    downloadButton.addEventListener('click', () => {
         const link = document.createElement('a');
-        link.href = 'data:image/jpeg;base64,' + imageBase64;
-        link.download = `image_${currentChatId}_${Date.now()}.jpg`;
+        link.href = fullAudioUrl;
+        link.download = 'audio.wav';
         link.click();
-    }
+    });
 
-    function addToHistory(input, output) {
-        const chatData = { 
-            id: currentChatId, 
-            input, 
-            output,
-            timestamp: Date.now()
-        };
-        let history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        history.push(chatData);
-        localStorage.setItem('chatHistory', JSON.stringify(history));
-        updateHistoryList();
-    }
+    audioContainer.appendChild(audio);
+    audioContainer.appendChild(downloadButton);
+    chatHistory.appendChild(audioContainer);
+}
 
-    function updateHistoryList() {
-        historyList.innerHTML = '';
-        const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        history.forEach(chat => {
-            const listItem = document.createElement('li');
-            listItem.textContent = chat.input.substring(0, 30) + '...';
-            
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = '🗑️';
-            deleteButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                deleteChat(chat.id);
-            });
-            
-            listItem.appendChild(deleteButton);
-            listItem.addEventListener('click', () => openChatHistory(chat.id));
-            historyList.appendChild(listItem);
-        });
-    }
+// Updated display image function
+function displayImage(imageUrl) {
+    const imageContainer = document.createElement('div');
+    imageContainer.classList.add('image-container');
 
-    function deleteChat(chatId) {
-        let history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        history = history.filter(chat => chat.id !== chatId);
-        localStorage.setItem('chatHistory', JSON.stringify(history));
-        updateHistoryList();
-    }
+    const img = document.createElement('img');
+    const fullImageUrl = getMediaUrl(imageUrl);
+    img.src = fullImageUrl;
+    img.alt = 'Generated Image';
+    img.classList.add('image-thumbnail');
 
-    function openChatHistory(chatId) {
-        const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        const chat = history.find(c => c.id === chatId);
-        if (chat) {
-            window.open(`history.html?id=${chatId}`, '_blank');
-        }
-    }
+    img.onerror = function() {
+        console.error('Error loading image:', fullImageUrl);
+        showError(`Error loading image: ${fullImageUrl}`);
+    };
 
-    function startNewChat() {
-        chatHistory.innerHTML = '';
-        userInput.value = '';
-        currentChatId = Date.now().toString();
-        currentImageCount = 0;
-        currentAudioCount = 0;
-    }
+    imageContainer.appendChild(img);
+    chatHistory.appendChild(imageContainer);
 
-    function showError(message) {
-        errorMessage.textContent = message;
-        errorPopup.style.display = 'block';
-    }
+    // Create fullscreen overlay
+    const overlay = document.createElement('div');
+    overlay.classList.add('fullscreen-overlay');
+    const fullscreenImg = document.createElement('img');
+    fullscreenImg.src = fullImageUrl;
+    fullscreenImg.alt = 'Fullscreen Image';
+    fullscreenImg.classList.add('fullscreen-image');
+    overlay.appendChild(fullscreenImg);
+    document.body.appendChild(overlay);
 
-    function closeErrorPopup() {
+    // Add click event to show fullscreen
+    img.addEventListener('click', () => {
+        overlay.style.display = 'flex';
+    });
+
+    // Add click event to hide fullscreen
+    overlay.addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    const downloadButton = document.createElement('button');
+    downloadButton.textContent = 'Download';
+    downloadButton.classList.add('download-button');
+    downloadButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent triggering the fullscreen view
+        const link = document.createElement('a');
+        link.href = fullImageUrl;
+        link.download = 'image.jpg';
+        link.click();
+    });
+
+    imageContainer.appendChild(downloadButton);
+}
+// Show loading animation
+function showLoader() {
+    loader.style.display = 'block';
+}
+
+// Hide loading animation
+function hideLoader() {
+    loader.style.display = 'none';
+}
+
+// Display error messages
+function showError(message) {
+    errorMessage.textContent = message;
+    errorPopup.style.display = 'block';
+
+    const closeButton = errorPopup.querySelector('.close-button');
+    closeButton.addEventListener('click', () => {
         errorPopup.style.display = 'none';
-    }
+    });
+}
 
-    function saveAudioToLocalStorage(audioBlob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = function() {
-                try {
-                    const base64Audio = reader.result;
-                    let audioStorage = JSON.parse(localStorage.getItem('audioStorage')) || {};
-                    audioStorage[currentChatId] = base64Audio;
-                    localStorage.setItem('audioStorage', JSON.stringify(audioStorage));
-                    resolve(base64Audio);
-                } catch (error) {
-                    if (error.name === 'QuotaExceededError') {
-                        console.warn('LocalStorage quota exceeded. Unable to save audio.');
-                        showError('Unable to save audio due to storage limitations.');
-                    } else {
-                        reject(error);
-                    }
-                }
-            }
-            reader.onerror = reject;
-            reader.readAsDataURL(audioBlob);
-        });
-    }
-
-    function saveImageToLocalStorage(imageBase64) {
-        try {
-            let imageStorage = JSON.parse(localStorage.getItem('imageStorage')) || {};
-            if (!imageStorage[currentChatId]) {
-                imageStorage[currentChatId] = [];
-            }
-            imageStorage[currentChatId].push(imageBase64);
-            localStorage.setItem('imageStorage', JSON.stringify(imageStorage));
-        } catch (error) {
-            if (error.name === 'QuotaExceededError') {
-                console.warn('LocalStorage quota exceeded. Unable to save image.');
-                showError('Unable to save image due to storage limitations.');
-            } else {
-                throw error;
+// Get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
     }
+    return cookieValue;
+}
 
-    function loadChatHistory() {
-        const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        history.forEach(chat => {
-            addMessageToChat('user', chat.input);
-            addMessageToChat('ai', chat.output);
-        });
-        updateHistoryList();
-    }
-
-    function loadEntireChatHistory() {
-        const history = JSON.parse(localStorage.getItem('chatHistory')) || [];
-        const audioStorage = JSON.parse(localStorage.getItem('audioStorage')) || {};
-        const imageStorage = JSON.parse(localStorage.getItem('imageStorage')) || {};
-
-        chatHistory.innerHTML = ''; // Clear existing chat display
-
-        history.forEach(chat => {
-            if (chat.id === currentChatId) {
-                addMessageToChat('user', chat.input);
-                addMessageToChat('ai', chat.output);
-
-                // Load associated audio
-                if (audioStorage[chat.id]) {
-                    const audioBlob = base64ToBlob(audioStorage[chat.id]);
-                    addAudioToMessage(chatHistory.lastElementChild, audioBlob);
-                }
-
-                // Load associated images
-                if (imageStorage[chat.id]) {
-                    imageStorage[chat.id].forEach(imageBase64 => {
-                        addImageToChat(imageBase64);
-                    });
-                }
-            }
-        });
-    }
-
-    function base64ToBlob(base64, mimeType = 'audio/wav') {
-        const byteCharacters = atob(base64.split(',')[1]);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        return new Blob([byteArray], {type: mimeType});
-    }
-
-
-
-
-    loadEntireChatHistory();
-});
+// Initialize the chat interface when the page loads
+window.addEventListener('load', initChat);
