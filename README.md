@@ -11,6 +11,7 @@ A lightweight conversational assistant that allows users to interact using both 
 - **Microphone Input**: Supports real-time speech input via microphone.
 - **Image Generation**: Integrated with open-source models and Hugging Face API for generating images from text.
 - **Django Web Interface**: Accessible through a local server for easy interaction.
+
 **NB ON Secrets**: I wll remove the secretes after one week you can go to hugging face and get your own api key from hugging face.
 
    ```bash
