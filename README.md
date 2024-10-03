@@ -164,6 +164,10 @@ Some of the models for image generation are integrated via Hugging Face API keys
 
 3. **Configure the API Key in Django:**
    Set the Hugging Face API key in your environment or directly in the Django configuration file to enable API-based model access.
+   ```bash
+   file path
+   src/src/secrets/secrets.txt
+   ```
 
 ---
 
