@@ -1,5 +1,5 @@
 
-# Speech and Text Testing System
+# Speech and Text image, Chatbot/Virtual Assistant.
 
 A lightweight conversational assistant that allows users to interact using both speech and text. This system utilizes state-of-the-art models for speech recognition and text-to-speech (TTS) generation, including Whisper for transcription and Coqui TTS for speech synthesis. The project is built using Django and supports additional models and APIs via Hugging Face.
 
