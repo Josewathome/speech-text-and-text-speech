@@ -50,7 +50,7 @@ Ensure you have the following installed:
 2. **Create a Virtual Environment (Optional but Recommended):**
    ```bash
    python -m venv venv
-   source venv/bin/activate    # On Windows: venv\Scripts\activate
+   source venv/bin/activate    # On Windows: venv\Scripts\activate.bat
    ```
 
 3. **Install Requirements:**
