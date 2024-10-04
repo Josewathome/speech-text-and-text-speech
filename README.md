@@ -53,11 +53,14 @@ Ensure you have the following installed:
    source venv/bin/activate    # On Windows: venv\Scripts\activate.bat
    ```
 
-3. **Install Requirements:**
+3. **Install Requirements using WSL subsystem or linux:**
    ```bash
    pip install -r requirements.txt
    ```
-
+   **If using windows**
+   ```bash
+   use this file to install the requirements manually in Windows_Requirements.docx
+   ```
 4. **Set Up the Django Application:**
    Make and apply migrations for the Django project.
    ```bash
