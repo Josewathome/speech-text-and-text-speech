@@ -53,26 +53,37 @@ If you have Docker and WSL installed, you can run the application in a Docker co
    ```bash
    docker-compose up --build
    ```
+   
    #### you can stop the service and start the service at any point. dont build the container twice not unless its necessary.
+   
    manually install ffmpeg inside the running Docker container without rebuilding it. Here’s how to do that step-by-step:
+   
    1. **Access the Running Container**
       First, you need to get a shell into your running Django container. You can do this with the following command:
       ```bash
       docker-compose exec django /bin/bash
       ```
       This command opens a bash shell in the **django*** container.
-   2. **Install ***ffmpeg*** Manually**
+      
+   3. **Install ***ffmpeg*** Manually**
       Once inside the container, you can install **ffmpeg** using *apt-get*. Run the following commands:
       ```bash
       apt-get update
       apt-get install -y ffmpeg
       ```
+      
    4. **Verify the Installation**
       After the installation is complete, you can verify that ***ffmpeg*** is installed correctly by running:
       ```bash
       ffmpeg -version
       ```
       This should display the version of ffmpeg that was installed.
+      
+   6. **Exit container**
+      To exit container type
+      ```bash
+      exit
+      ```
    
 3. **Start the Services:**
    ```bash
