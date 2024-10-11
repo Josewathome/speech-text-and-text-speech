@@ -60,9 +60,20 @@ If you have Docker and WSL installed, you can run the application in a Docker co
       ```bash
       docker-compose exec django /bin/bash
       ```
-   2. 
+      This command opens a bash shell in the **django*** container.
+   2. **Install ***ffmpeg*** Manually**
+      Once inside the container, you can install **ffmpeg** using *apt-get*. Run the following commands:
+      ```bash
+      apt-get update
+      apt-get install -y ffmpeg
+      ```
+   4. **Verify the Installation**
+      After the installation is complete, you can verify that ***ffmpeg*** is installed correctly by running:
+      ```bash
+      ffmpeg -version
+      ```
+      This should display the version of ffmpeg that was installed.
    
-
 3. **Start the Services:**
    ```bash
    docker-compose up -d
