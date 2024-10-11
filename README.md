@@ -40,6 +40,36 @@ Ensure you have the following installed:
 - Other dependencies listed in `requirements.txt`
 
 ### Steps
+## Running the Application
+
+You have two options for running this application: **Docker** or **Local Setup**. Choose the method that best suits your environment.
+
+### Option 1: Running with Docker
+
+If you have Docker and WSL installed, you can run the application in a Docker container. This method simplifies dependencies and environment setup.
+
+1. **Build Docker:**
+   Ensure you have Docker installed and configured.
+
+2. **Start the Services:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Check Logs (Optional):**
+   ```bash
+   docker-compose logs -f django
+   ```
+
+4. **Stop Services:**
+   ```bash
+   docker-compose down
+   ```
+
+5. **Access the Interface:**
+   Open your browser and go to [http://localhost:8000/api/interface/](http://localhost:8000/api/interface/) to interact with the assistant.
+
+### Option 2: Original Local Setup
 
 1. **Clone the Repository:**
    ```bash
