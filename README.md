@@ -128,8 +128,8 @@ If you have Docker and WSL installed, you can run the application in a Docker co
 4. **Set Up the Django Application:**
    Make and apply migrations for the Django project.
    ```bash
-   python manage.py makemigrations
-   python manage.py migrate
+   python manage.py makemigrations text
+   python manage.py migrate text
    ```
 
 5. **Run the Django Server:**
