@@ -12,6 +12,7 @@ A lightweight conversational assistant that allows users to interact using both 
 - **Microphone Input**: Supports real-time speech input via microphone.
 - **Image Generation**: Integrated with open-source models and Hugging Face API for generating images from text.
 - **Django Web Interface**: Accessible through a local server for easy interaction.
+
 **view**
 [sreen recording for project](https://flonnect.com/video/6c72de656e61-4039-a3fa-9b5493bc7b23)
 
