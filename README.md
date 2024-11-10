@@ -1,7 +1,7 @@
 
 # Speech and Text image
 ## Chatbot/Virtual Assistant.
-
+![alt text](https://github.com/Josewathome/speech-text-and-text-speech/blob/main/screenshot/Screenshot%202024-10-03%20221802.png)
 A lightweight conversational assistant that allows users to interact using both speech and text. This system utilizes state-of-the-art models for speech recognition and text-to-speech (TTS) generation, including Whisper for transcription and Coqui TTS for speech synthesis. The project is built using Django and supports additional models and APIs via Hugging Face.
 
 ![Microphone Icon](https://img.icons8.com/ios-filled/50/000000/microphone.png) ![Speaker Icon](https://img.icons8.com/ios-filled/50/000000/speaker.png)
