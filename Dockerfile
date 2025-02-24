@@ -10,7 +10,8 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libpq-dev gcc python3-dev musl-dev
+    libpq-dev gcc python3-dev build-essential ffmpeg \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file
 COPY requirements.txt /app/
